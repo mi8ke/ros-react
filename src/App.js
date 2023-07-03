@@ -1,52 +1,50 @@
-// import logo from './logo.svg';
-// import './App.css';
+import React, { useEffect, useState } from 'react';
+import ROSLIB from 'roslib';
 
-// function App() {
-//   return (
-//     <div className="App">
-//       <header className="App-header">
-//         <img src={logo} className="App-logo" alt="logo" />
-//         <p>
-//           Edit <code>src/App.js</code> and save to reload.
-//         </p>
-//         <a
-//           className="App-link"
-//           href="https://reactjs.org"
-//           target="_blank"
-//           rel="noopener noreferrer"
-//           >
-//           Learn React
-//         </a>
-//       </header>
-//     </div>
-//   );
-// }
+const RosInfoDisplay = () => {
+  const [velocity, setVelocity] = useState(null);
 
-// export default App;
+  useEffect(() => {
+    // ROS connection setup
+    const ros = new ROSLIB.Ros();
+    const topic = new ROSLIB.Topic({
+      ros: ros,
+      name: '/velocity_topic', // Replace with your actual ROS topic name
+      messageType: 'geometry_msgs/Twist' // Replace with your actual message type
+    });
 
-import React, { Component } from 'react';
-import {LineChart, Line} from 'recharts';
+    ros.connect('ws://localhost:9090'); // Replace with your actual ROS WebSocket server URL
 
-import './App.css';
+    // Subscribe to the ROS topic
+    topic.subscribe(message => {
+      // Update the velocity state with the received message
+      setVelocity(message);
+    });
 
-const data = [
-  {name: 'Page A', uv: 4000},
-  {name: 'Page B', uv: 3000},
-  {name: 'Page C', uv: 2000},
-  {name: 'Page D', uv: 2780},
-  {name: 'Page E', uv: 1890},
-  {name: 'Page F', uv: 2390},
-  {name: 'Page G', uv: 3490},
-]
+    // Cleanup on component unmount
+    return () => {
+      topic.unsubscribe();
+      ros.close();
+    };
+  }, []);
 
-class App extends Component {
-  render() {
-    return (
-        <LineChart width={400} height={400} data={data}>
-        <Line type="monotone" dataKey="uv" stroke="#8884d8" />
-        </LineChart>
-    );
-  }
-}
+  return (
+    <div>
+      {velocity ? (
+        <div>
+          <h2>Velocity</h2>
+          <p>Linear X: {velocity.linear.x}</p>
+          <p>Linear Y: {velocity.linear.y}</p>
+          <p>Linear Z: {velocity.linear.z}</p>
+          <p>Angular X: {velocity.angular.x}</p>
+          <p>Angular Y: {velocity.angular.y}</p>
+          <p>Angular Z: {velocity.angular.z}</p>
+        </div>
+      ) : (
+        <p>No velocity data available</p>
+      )}
+    </div>
+  );
+};
 
-export default App;
+export default RosInfoDisplay;
